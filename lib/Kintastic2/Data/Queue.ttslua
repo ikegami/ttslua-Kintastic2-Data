@@ -1,0 +1,133 @@
+--[==[ =========================================================================
+Kintastic2.Data.Queue - Queue class
+===================================
+
+A simple queue implementation.
+
+`nil` can't be stored in these sets.
+
+# TABLE OF CONTENTS
+
+[[TOC]]
+
+# SYNOPSIS
+
+```lua
+local Queue = require( "Kintastic2.Data.Queue" )
+
+local q = Queue:new()
+a:enqueue( "a" )
+a:enqueue( "b" )
+a:enqueue( "c" )
+
+while not q:is_empty() do
+   print( q:dequeue() )   -- a b c
+end
+```
+]==]
+
+
+-- This class.
+local Queue = { }
+
+Queue.mt = {
+   __index = Queue,
+}
+
+
+--[==[ =========================================================================
+# CONSTRUCTOR
+]==]
+
+
+--[==[ -----------------------------------------------------
+## Queue:new
+
+```lua
+local q = Queue:new()
+```
+]==]
+
+function Queue.new( class )
+   local self = setmetatable( { }, class.mt )
+
+   self.head = nil
+   self.tail = nil
+
+   return self
+end
+
+
+--[==[ =========================================================================
+# INSTANCE METHODS
+]==]
+
+
+--[==[ -----------------------------------------------------
+## queue:dequeue
+
+```lua
+local value = q:dequeue()
+```
+
+Removes the value at the head of the queue and returns it.
+Returns nothing if the queue is empty.
+]==]
+
+function Queue:dequeue()
+   if self.head == nil then
+      return
+   end
+
+   local value = self.head.value
+   self.head = self.head.next
+   if not self.head then
+      self.tail = nil
+   end
+
+   return value
+end
+
+
+--[==[ -----------------------------------------------------
+## queue:enqueue
+
+```lua
+q:enqueue( value )
+```
+
+Adds a value to the tail of the queue.
+]==]
+
+function Queue:enqueue( value )
+   local node = {
+      value = value,
+      next  = nil,
+   }
+
+   if self.tail then
+      self.tail.next = node
+   else
+      self.head = node
+   end
+
+   self.tail = node
+end
+
+
+--[==[ -----------------------------------------------------
+## queue:is_empty
+
+```lua
+local boolean q:is_empty()
+```
+]==]
+
+function Queue:is_empty()
+   return self.head == nil
+end
+
+
+-- ================================================================================
+
+return Queue

@@ -1,0 +1,298 @@
+--[==[ =========================================================================
+Kintastic2.Data.Set - Set class
+===============================
+
+A set is an unordered collection of unique values.
+
+`nil` can't be stored in these sets.
+
+# TABLE OF CONTENTS
+
+[[TOC]]
+
+# SYNOPSIS
+
+```lua
+local Set = require( "Kintastic2.Data.Set" )
+
+local set = Set:new({ "a", "b" })
+set:delete( "b" ):add( "c" ):add( "d" )
+for value in set:values() do
+   print( value )   -- a c d, in any order.
+end
+
+print( set:has( "e" ) )   -- false
+print( set:size( )        -- 3
+
+local values = set:get_values()  -- a c d, in any order.
+
+
+local set1 = Set:new({ "a", "b", "c", "d"           })
+local set2 = Set:new({           "c", "d", "e", "f" })
+
+local union        = set1 + set2   -- a b c d e f
+local difference   = set1 - set2   -- a b
+local intersection = set1 * set2   --     c d
+```
+]==]
+
+
+local Set = { }
+
+Set.mt = {
+   __index = Set
+}
+
+
+--[==[ =========================================================================
+# CONSTRUCTOR
+]==]
+
+--[==[ -----------------------------------------------------
+## Set:new
+
+```lua
+local set = Set:new()
+local set = Set:new( array )
+```
+
+Create an empty set, or one that contains the values
+provided by an array.
+]==]
+
+function Set.new( class, array )
+   local self = setmetatable( { }, class.mt )
+
+   local data = { }
+   if array then
+      for i, v in ipairs( array ) do
+         data[v] = true
+      end
+   end
+
+   self._data = data
+
+   return self
+end
+
+
+--[==[ =========================================================================
+# CLASS METHODS
+]==]
+
+
+--[==[ -----------------------------------------------------
+## Set:union
+## set + set
+
+```lua
+local set = Set:union( set1, set2 )
+local set = set1 + set2
+```
+]==]
+
+function Set.union( class, set1, set2 )
+   local self = class:new()
+   local data = self._data
+   for v in set1:values() do data[ v ] = true end
+   for v in set2:values() do data[ v ] = true end
+   return self
+end
+
+
+function Set.mt.__add( set1, set2 )
+   return Set:union( set1, set2 )
+end
+
+
+--[==[ -----------------------------------------------------
+## Set:difference
+## set - set
+
+```lua
+local set = Set:difference( set1, set2 )
+local set = set1 - set2
+```
+]==]
+
+function Set.difference( class, set1, set2 )
+   local self = class:new()
+   local data = self._data
+   for v in set1:values() do data[ v ] = true end
+   for v in set2:values() do data[ v ] = nil  end
+   return self
+end
+
+
+function Set.mt.__sub( set1, set2 )
+   return Set:difference( set1, set2 )
+end
+
+
+--[==[ -----------------------------------------------------
+## Set:intersection
+## set * set
+
+```lua
+local set = Set:intersection( set1, set2 )
+local set = set1 * set2
+```
+]==]
+
+function Set.intersection( class, set1, set2 )
+   local self = class:new()
+
+   local data = self._data
+   for v in set1:values() do
+      if set2:has( v ) then
+         data[ v ] = true
+      end
+   end
+
+   return self
+end
+
+
+function Set.mt.__mul( set1, set2 )
+   return Set:intersection( set1, set2 )
+end
+
+
+--[==[ =========================================================================
+# INSTANCE METHODS
+]==]
+
+
+--[==[ -----------------------------------------------------
+## set:add
+
+```lua
+set = set:add( value )
+```
+
+Adds a value to a set. Has no effect if the value is already
+part of the set.
+
+Returns the set as a convenience.
+]==]
+
+function Set:add( value )
+   self._data[ value ] = true
+   return self
+end
+
+
+--[==[ -----------------------------------------------------
+## set:delete
+## set:del
+
+```lua
+set = set:delete( value )
+set = set:del( value )
+```
+
+Removes a value from a set. Has no effect if the value is
+already absent.
+
+Returns the set as a convenience.
+
+`set:del` is an alias for `set:delete`.
+]==]
+
+function Set:delete( value )
+   self._data[ value ] = nil
+   return self
+end
+
+
+Set.del = Set.delete
+
+
+--[==[ -----------------------------------------------------
+## set:has
+
+```lua
+local boolean = set:has( value )
+```
+
+Returns true if the value is part of the set.
+]==]
+
+function Set:has( value )
+   -- In TTS, `k ~= nil` isn't reliable
+   -- because of `__eq` overloads.
+   return type( self._data[ value ] ) ~= "nil"
+end
+
+
+--[==[ -----------------------------------------------------
+## set:size
+
+```lua
+local size = set:size()
+```
+
+Returns the number of values which are part of the set.
+(This currently requires iterating over the entire set.)
+]==]
+
+function Set:size()
+   local size = 0
+   for v in pairs( self._data ) do
+      size = size + 1
+   end
+
+   return size
+end
+
+
+--[==[ -----------------------------------------------------
+## set:get_values
+
+```lua
+local values = set:get_values()
+```
+
+Returns an array of the values which are part of the set.
+]==]
+
+function Set:get_values()
+   local values = { }
+
+   for v in pairs( self._data ) do
+      table.insert( values, v )
+   end
+
+   return values
+end
+
+
+
+--[==[ -----------------------------------------------------
+## set:values
+
+```lua
+for value in set:values() do … end
+```
+
+Produces an iterator suitable for `for in` which visits each
+value which is part of the set.
+]==]
+
+function Set:values()
+   local data = self._data
+   local k = nil
+   return function()
+      k = next( data, k )
+      -- In TTS, `k ~= nil` isn't reliable
+      -- because of `__eq` overloads.
+      if type( k ) ~= "nil" then
+         return k
+      end
+   end
+end
+
+
+-- =============================================================================
+
+return Set
